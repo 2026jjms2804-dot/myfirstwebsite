@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duo Focus Pomodoro: 컬러풀 듀오 사육장</title>
+    <!-- Tailwind CSS 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter 및 한글 고딕 폰트 로드 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Noto Sans KR', 'Inter', sans-serif;
+            background-color: #f7f7f7;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+        /* 듀오링고 스타일의 입체형 3D 버튼 정의 */
+        .btn-duo-green {
+            background-color: #58cc02;
+            border-bottom: 5px solid #46a302;
+            transition: all 0.1s ease;
+        }
+        .btn-duo-green:hover {
+            background-color: #61e002;
+        }
+        .btn-duo-green:active {
+            border-bottom-width: 0px;
+            transform: translateY(5px);
+        }
+        .btn-duo-blue {
+            background-color: #1899eb;
+            border-bottom: 5px solid #1072b0;
+            transition: all 0.1s ease;
+        }
+        .btn-duo-blue:hover {
+            background-color: #21a6f8;
+        }
+        .btn-duo-blue:active {
+            border-bottom-width: 0px;
+            transform: translateY(5px);
+        }
+        .btn-duo-gray {
+            background-color: #e5e5e5;
+            border-bottom: 5px solid #afafaf;
+            color: #4b4b4b;
+            transition: all 0.1s ease;
+        }
+        .btn-duo-gray:hover {
+            background-color: #f0f0f0;
+        }
+        .btn-duo-gray:active {
+            border-bottom-width: 0px;
+            transform: translateY(5px);
+        }
+        .btn-duo-danger {
+            background-color: #ff4b4b;
+            border-bottom: 5px solid #ea2b2b;
+            color: white;
+            transition: all 0.1s ease;
+        }
+        .btn-duo-danger:hover {
+            background-color: #ff6060;
+        }
+        .btn-duo-danger:active {
+            border-bottom-width: 0px;
+            transform: translateY(5px);
+        }
+        /* 둥둥 떠 있는 듯한 애니메이션 효과 */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .duo-float {
+            animation: float 4s infinite ease-in-out;
+        }
+        /* 부화 전 알 흔들림 애니메이션 효과 */
+        @keyframes eggShake {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(-6deg) scale(1.02); }
+            75% { transform: rotate(6deg) scale(1.02); }
+        }
+        .egg-shake {
+            animation: eggShake 1.2s infinite ease-in-out;
+        }
+        /* 딴짓 감지 시 비상 경고 적색 화면 교차 블링킹 효과 */
+        @keyframes redAlert {
+            0%, 100% { background-color: #f7f7f7; }
+            50% { background-color: #fee2e2; }
+        }
+        .emergency-active {
+            animation: redAlert 0.8s infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-4 overflow-x-hidden">
+
+    <!-- 상단 헤더 영역 -->
+    <header class="w-full max-w-md flex justify-between items-center py-3 px-5 bg-white rounded-2xl shadow-sm border-2 border-gray-200 mt-2">
+        <div class="flex items-center space-x-2">
+            <span class="text-3xl">🦉</span>
+            <div class="flex flex-col">
+                <span class="font-extrabold text-lg text-[#58cc02] leading-none tracking-tight">DUO POMO</span>
+                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Focus & Evolve</span>
+            </div>
+        </div>
+        <div class="flex items-center space-x-3">
+            <div id="streak-counter" class="flex items-center space-x-1 px-2.5 py-1 bg-amber-50 text-amber-600 text-xs font-bold rounded-xl border border-amber-200 shadow-sm">
+                <span>🔥</span>
+                <span id="streak-text">0회 성공</span>
+            </div>
+            <div id="defense-badge" class="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-700 text-[10px] font-black rounded-full uppercase">
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
+                <span>SAFE</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 타이머 vs 사육장 도감 탭 내비게이션 -->
+    <div class="w-full max-w-md grid grid-cols-2 gap-2 mt-4">
+        <button id="tab-timer" class="py-2 rounded-xl font-bold text-sm bg-white border-2 border-[#58cc02] text-[#58cc02] shadow-sm">⏳ 집중 타이머</button>
+        <button id="tab-sanctuary" class="py-2 rounded-xl font-bold text-sm bg-white border-2 border-gray-200 text-gray-400">🏡 나의 듀오 사육장 (<span id="sanctuary-count">0</span>)</button>
+    </div>
+
+    <!-- 메인 타이머 뷰 -->
+    <main id="view-timer" class="w-full max-w-md flex-1 flex flex-col items-center justify-center my-4 space-y-5">
+        
+        <!-- 대사 대화창 -->
+        <div class="relative w-full px-2">
+            <div id="speech-bubble" class="bg-white border-2 border-gray-200 p-4 rounded-2xl text-center font-bold text-gray-700 text-sm shadow-sm relative after:absolute after:bottom-[-10px] after:left-1/2 after:-translate-x-1/2 after:border-t-[10px] after:border-t-white after:border-x-[10px] after:border-x-transparent before:absolute before:bottom-[-13px] before:left-1/2 before:-translate-x-1/2 before:border-t-[11px] before:border-t-gray-200 before:border-x-[11px] before:border-x-transparent">
+                "안녕? 난 듀오야! 딴짓할 생각은 버려. 집중하지 않으면 내 칼날이 울부짖을 거야!"
+            </div>
+        </div>
+
+        <!-- 듀오를 감싼 원형 타이머 링 -->
+        <div class="relative flex items-center justify-center w-64 h-64 mx-auto my-2">
+            <!-- 외부 원형 프로그레스 바 -->
+            <svg class="absolute inset-0 w-full h-full -rotate-90">
+                <circle cx="128" cy="128" r="116" stroke="#e5e7eb" stroke-width="12" fill="transparent" />
+                <circle id="timer-progress-ring" cx="128" cy="128" r="116" stroke="#58cc02" stroke-width="12" stroke-dasharray="728.8" stroke-dashoffset="0" stroke-linecap="round" fill="transparent" class="transition-all duration-300" />
+            </svg>
+            
+            <!-- 중심의 듀오 캐릭터 그래픽 마운트 영역 -->
+            <div id="duo-container" class="w-48 h-48 flex items-center justify-center relative duo-float z-10">
+                <!-- SVG 코드가 동적으로 마운트됩니다 -->
+            </div>
+        </div>
+
+        <!-- 상태 대시보드 카드 -->
+        <div class="w-full bg-white rounded-3xl p-6 shadow-sm border-2 border-gray-200 space-y-4">
+            
+            <!-- 듀오의 남은 인내심 (체력 바) -->
+            <div class="space-y-1">
+                <div class="flex justify-between text-xs font-extrabold">
+                    <span class="text-red-500">💥 듀오의 남은 인내심 (체력)</span>
+                    <span id="health-text" class="text-red-500">100%</span>
+                </div>
+                <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden border border-gray-200">
+                    <div id="health-bar" class="bg-red-500 h-full w-full transition-all duration-300"></div>
+                </div>
+            </div>
+
+            <!-- 타임 디스플레이 및 현재 모드 명시 -->
+            <div class="text-center py-2">
+                <div id="timer-display" class="text-6xl font-black text-gray-800 tracking-wider">25:00</div>
+                <div id="mode-display" class="text-xs font-black text-green-500 mt-1 uppercase tracking-widest">FOCUS TIME</div>
+            </div>
+
+            <!-- 포모도로 4단계 알 품기 진척 트래커 -->
+            <div class="bg-gray-50 rounded-2xl p-3 border border-gray-200">
+                <div class="flex justify-between text-[11px] font-black text-gray-400 uppercase tracking-wider mb-2">
+                    <span>오늘의 포모도로 알 품기</span>
+                    <span id="round-status">Round 1 / 4</span>
+                </div>
+                <div class="grid grid-cols-4 gap-2" id="round-slots">
+                    <!-- 스크립트에서 알 상태가 동적으로 바뀝니다 -->
+                </div>
+            </div>
+
+            <!-- 타이머 조작부 -->
+            <div class="grid grid-cols-2 gap-3">
+                <button id="btn-start" class="btn-duo-green text-white py-3.5 px-4 rounded-2xl font-black text-lg focus:outline-none shadow-sm">
+                    공부 시작!
+                </button>
+                <button id="btn-reset" class="btn-duo-gray py-3.5 px-4 rounded-2xl font-black text-lg focus:outline-none shadow-sm">
+                    초기화
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 사육장 및 도감 관리 뷰 (기본적으로 숨겨짐) -->
+    <main id="view-sanctuary" class="w-full max-w-md flex-1 flex flex-col my-4 space-y-4 hidden">
+        <div class="bg-white p-5 rounded-3xl border-2 border-gray-200 space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-black text-gray-800">🏡 나의 듀오 컬렉션</h3>
+                <div class="bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full text-xs">
+                    🪙 <span id="fp-balance">0</span> FP
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 leading-relaxed">
+                집중 세션을 클리어할 때마다 해당 라운드의 유니크 알을 얻고 성장을 위한 FP 포인트를 받습니다. 듀오들을 레벨업하여 나뭇잎 왕관을 쓴 궁극의 듀오로 성장시켜 보세요!
+            </p>
+
+            <!-- 듀오 보관 목록 -->
+            <div id="sanctuary-list" class="space-y-3 max-h-96 overflow-y-auto pr-1">
+                <!-- 획득하고 키우는 듀오 캐릭터들이 나열됩니다 -->
+            </div>
+        </div>
+    </main>
+
+    <!-- 하단 부가 제어판 및 가이드라인 -->
+    <footer class="w-full max-w-md bg-white p-4 rounded-2xl border-2 border-gray-200 space-y-4">
+        <!-- 스파르타식 집중 가이드라인 -->
+        <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-xs text-amber-800 space-y-1 leading-relaxed">
+            <p class="font-bold">🚨 듀오링고 포모도로 절대 수칙:</p>
+            <p>타이머 시작 후 **다른 인터넷 탭으로 이동**하거나 **바탕화면으로 내려놓는 등 이탈**하면, 듀오가 즉시 **칼을 든 비상 모드**로 각성하여 체력이 깎입니다. 인내심이 0%가 되면 가차없이 아웃당합니다!</p>
+        </div>
+
+        <!-- 커스텀 시간 세팅 아코디언 -->
+        <div class="border-t border-gray-100 pt-3 space-y-3 text-sm">
+            <div class="flex justify-between items-center text-xs font-black text-gray-500 uppercase tracking-widest">
+                <span>포모도로 시간 설정 (분)</span>
+                <span class="text-[10px] text-green-600 font-bold">*수정 즉시 반영</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 mb-1">집중 시간</label>
+                    <input type="number" id="input-focus" value="25" min="1" max="120" class="w-full p-2 border-2 border-gray-200 rounded-xl text-center font-bold text-gray-700 focus:border-[#58cc02] focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 mb-1">짧은 휴식</label>
+                    <input type="number" id="input-short" value="5" min="1" max="30" class="w-full p-2 border-2 border-gray-200 rounded-xl text-center font-bold text-gray-700 focus:border-sky-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 mb-1">긴 휴식</label>
+                    <input type="number" id="input-long" value="15" min="1" max="60" class="w-full p-2 border-2 border-gray-200 rounded-xl text-center font-bold text-gray-700 focus:border-indigo-500 focus:outline-none">
+                </div>
+            </div>
+
+            <!-- 사운드 토글 및 테스트 전용 60배속 컨트롤러 -->
+            <div class="flex justify-between items-center pt-1 border-t border-gray-100">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs font-bold text-gray-400">사운드 효과:</span>
+                    <button id="btn-sound-toggle" class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-green-100 text-green-700 border border-green-300">ON 🔊</button>
+                </div>
+                
+                <div class="flex items-center space-x-1">
+                    <label for="dev-speed" class="text-xs font-bold text-gray-400 cursor-pointer">⚡ 테스트용 60배속</label>
+                    <input type="checkbox" id="dev-speed" class="w-4 h-4 text-green-600 bg-gray-100 rounded border-gray-300 focus:ring-green-500">
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 모달 팝업 레이아웃 (보상 획득 및 아웃 알림 전용) -->
+    <div id="gameover-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center p-6 text-center">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full border-4 border-red-500 space-y-6">
+            <div class="text-6xl" id="modal-emoji">🔪</div>
+            <h2 id="modal-title" class="text-2xl font-black text-red-600">제 인내심의 한계입니다.</h2>
+            <p id="gameover-reason" class="text-sm font-bold text-gray-600 leading-relaxed">
+                "스페인어 하루 학습보다 집중 25분이 더 아깝다는 소립니까? 전 이제 침대 밑에 숨어서 당신을 영원히 감시할 겁니다."
+            </p>
+
+            <!-- 1단계 보상 전용 선택 박스 -->
+            <div id="reward-choices" class="hidden grid grid-cols-1 gap-3 pt-2">
+                <button id="btn-reward-rest" class="btn-duo-blue text-white py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-between">
+                    <span>☕ 10분 추가 휴식권 받기</span>
+                    <span class="bg-white/20 px-2 py-0.5 rounded text-xs">+10m Rest</span>
+                </button>
+                <button id="btn-reward-points" class="btn-duo-green text-white py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-between">
+                    <span>🧪 듀오 영양 포인트 받기</span>
+                    <span class="bg-white/20 px-2 py-0.5 rounded text-xs">+100 FP</span>
+                </button>
+            </div>
+
+            <button id="btn-restart" class="w-full btn-duo-danger text-white py-3.5 rounded-2xl font-black shadow-sm">
+                다시는 안 그러겠습니다
+            </button>
+        </div>
+    </div>
+
+    <!-- Firebase 모듈 로드 및 로컬 데이터 동기화 연동 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let db = null;
+        let auth = null;
+        let userId = null;
+        const appId = 'duo-pomo-v2';
+
+        /* -----------------------------------------
+         * STREAMING_CHUNK: Designing 5-color theme configurations
+         * ----------------------------------------- */
+        const DUO_THEMES = {
+            classic: {
+                name: "오리지널 초록",
+                main: "#78C800",
+                border: "#58A600",
+                light: "#A1E44D",
+                shadow: "#2C5400"
+            },
+            blue: {
+                name: "오션 딥블루",
+                main: "#1CB0F6",
+                border: "#1899EB",
+                light: "#84D8FF",
+                shadow: "#0A4E7A"
+            },
+            pink: {
+                name: "라즈베리 핑크",
+                main: "#FF5858",
+                border: "#D32F2F",
+                light: "#FF8A8A",
+                shadow: "#7A1414"
+            },
+            purple: {
+                name: "미스터리 퍼플",
+                main: "#A855F7",
+                border: "#7E22CE",
+                light: "#D8B4FE",
+                shadow: "#4A148C"
+            },
+            orange: {
+                name: "썬셋 오렌지",
+                main: "#FF9600",
+                border: "#D97706",
+                light: "#FFC04D",
+                shadow: "#7A3B00"
+            }
+        };
+
+        const THEME_KEYS = Object.keys(DUO_THEMES);
+
+        // 첫 번째 라운드는 무조건 초록색이며, 그 다음 라운드들은 중복 없이 섞이는 컬러 발생기
+        function generateRoundColors() {
+            const others = ['blue', 'pink', 'purple', 'orange'];
+            for (let i = others.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                const temp = others[i];
+                others[i] = others[j];
+                others[j] = temp;
+            }
+            return ['classic', ...others];
+        }
+
+        /* -----------------------------------------
+         * STREAMING_CHUNK: Crafting scalable high-fidelity SVGs for each stage
+         * ----------------------------------------- */
+        function getDuoSvg(stage, themeKey = 'classic') {
+            const theme = DUO_THEMES[themeKey] || DUO_THEMES.classic;
+            const main = theme.main;
+            const border = theme.border;
+            const light = theme.light;
+            const shadow = theme.shadow;
+
+            // Stage 1: 무늬가 선명한 무작위 알
+            if (stage === 1) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full egg-shake">
+                    <ellipse cx="100" cy="170" rx="42" ry="8" fill="#e2e8f0" />
+                    <ellipse cx="100" cy="110" rx="52" ry="68" fill="${main}" stroke="${border}" stroke-width="6" />
+                    <ellipse cx="100" cy="110" rx="35" ry="45" fill="${light}" opacity="0.8" />
+                    <ellipse cx="80" cy="80" rx="8" ry="12" fill="${border}" />
+                    <ellipse cx="120" cy="130" rx="10" ry="15" fill="${border}" />
+                    <ellipse cx="70" cy="125" rx="6" ry="9" fill="${border}" />
+                </svg>`;
+            }
+
+            // Stage 2: 서서히 금이 가며 엿보는 듯한 깨진 알
+            if (stage === 2) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full egg-shake">
+                    <ellipse cx="100" cy="170" rx="42" ry="8" fill="#e2e8f0" />
+                    <ellipse cx="100" cy="110" rx="52" ry="68" fill="${main}" stroke="${border}" stroke-width="6" />
+                    <ellipse cx="100" cy="110" rx="35" ry="45" fill="${light}" opacity="0.8" />
+                    <ellipse cx="80" cy="80" rx="8" ry="12" fill="${border}" />
+                    <ellipse cx="120" cy="130" rx="10" ry="15" fill="${border}" />
+                    <path d="M100,42 L105,70 L95,85 L110,110 L90,130 L100,178" fill="none" stroke="${shadow}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                    <circle cx="105" cy="98" r="6" fill="#111" />
+                    <circle cx="106" cy="96" r="2" fill="white" />
+                    <polygon points="103,103 97,108 107,108" fill="#FF9600" />
+                </svg>`;
+            }
+
+            // Stage 3: 귀여운 얼굴의 어린 아기 듀오
+            if (stage === 3) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full">
+                    <ellipse cx="100" cy="175" rx="45" ry="8" fill="#e2e8f0" />
+                    <circle cx="82" cy="166" r="10" fill="#FF9600" />
+                    <circle cx="118" cy="166" r="10" fill="#FF9600" />
+                    <rect x="55" y="65" width="90" height="100" rx="45" fill="${main}" stroke="${border}" stroke-width="5" />
+                    <path d="M 55,90 Q 60,45 80,68 Z" fill="${main}" stroke="${border}" stroke-width="3" />
+                    <path d="M 145,90 Q 140,45 120,68 Z" fill="${main}" stroke="${border}" stroke-width="3" />
+                    <path d="M 62,115 C 62,95 80,88 100,102 C 120,88 138,95 138,115 C 138,135 120,132 100,122 C 80,132 62,135 62,115 Z" fill="${light}" />
+                    <circle cx="84" cy="112" r="16" fill="white" />
+                    <circle cx="116" cy="112" r="16" fill="white" />
+                    <circle cx="88" cy="112" r="7" fill="#4B4B4B" />
+                    <circle cx="112" cy="112" r="7" fill="#4B4B4B" />
+                    <circle cx="86" cy="109" r="2.5" fill="white" />
+                    <circle cx="110" cy="109" r="2.5" fill="white" />
+                    <path d="M 96,112 Q 100,111 104,112 L 100,120 Z" fill="#FF9600" />
+                    <path d="M 57,115 Q 40,125 57,135 Z" fill="${main}" />
+                    <path d="M 143,115 Q 160,125 143,135 Z" fill="${main}" />
+                </svg>`;
+            }
+
+            // Stage 4: 늠름하고 당당해진 청소년/성체 듀오
+            if (stage === 4) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full">
+                    <ellipse cx="100" cy="175" rx="55" ry="10" fill="#e2e8f0" />
+                    <ellipse cx="76" cy="168" rx="14" ry="8" fill="#FF9600" />
+                    <ellipse cx="124" cy="168" rx="14" ry="8" fill="#FF9600" />
+                    <rect x="44" y="55" width="112" height="115" rx="48" fill="${main}" stroke="${border}" stroke-width="5" />
+                    <path d="M 44,95 Q 48,40 80,60 Z" fill="${main}" stroke="${border}" stroke-width="4" />
+                    <path d="M 156,95 Q 152,40 120,60 Z" fill="${main}" stroke="${border}" stroke-width="4" />
+                    <path d="M 52,112 C 52,88 76,80 100,100 C 124,80 148,112 148,112 C 148,135 124,132 100,120 C 76,132 52,135 52,112 Z" fill="${light}" />
+                    <circle cx="78" cy="108" r="21" fill="white" />
+                    <circle cx="122" cy="108" r="21" fill="white" />
+                    <circle cx="83" cy="108" r="8" fill="#4B4B4B" />
+                    <circle cx="117" cy="108" r="8" fill="#4B4B4B" />
+                    <circle cx="81" cy="105" r="3" fill="white" />
+                    <circle cx="115" cy="105" r="3" fill="white" />
+                    <path d="M 92,110 Q 100,108 108,110 L 100,125 Z" fill="#FF9600" />
+                    <path d="M 45,105 C 28,115 28,138 45,148 Z" fill="${main}" stroke="${border}" stroke-width="3" />
+                    <path d="M 155,105 C 172,115 172,138 155,148 Z" fill="${main}" stroke="${border}" stroke-width="3" />
+                    <path d="M 88,140 L 100,148 L 112,140" fill="none" stroke="${light}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M 80,150 L 100,160 L 120,150" fill="none" stroke="${light}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>`;
+            }
+
+            // Stage 5: 황금관 대신 머리에 녹색 나뭇잎 왕관을 얹은 대현자 듀오
+            if (stage === 5) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full">
+                    <circle cx="100" cy="100" r="88" fill="${light}" opacity="0.3" class="animate-pulse" />
+                    <ellipse cx="100" cy="175" rx="55" ry="10" fill="#e2e8f0" />
+                    <ellipse cx="76" cy="168" rx="14" ry="8" fill="#FF9600" />
+                    <ellipse cx="124" cy="168" rx="14" ry="8" fill="#FF9600" />
+                    <rect x="44" y="55" width="112" height="115" rx="48" fill="${main}" stroke="${border}" stroke-width="5" />
+                    <path d="M 44,95 Q 48,40 80,60 Z" fill="${main}" stroke="${border}" stroke-width="4" />
+                    <path d="M 156,95 Q 152,40 120,60 Z" fill="${main}" stroke="${border}" stroke-width="4" />
+                    <path d="M 52,112 C 52,88 76,80 100,100 C 124,80 148,112 148,112 C 148,135 124,132 100,120 C 76,132 52,135 52,112 Z" fill="${light}" />
+                    <circle cx="78" cy="108" r="21" fill="white" />
+                    <circle cx="122" cy="108" r="21" fill="white" />
+                    <circle cx="83" cy="108" r="8" fill="#4B4B4B" />
+                    <circle cx="117" cy="108" r="8" fill="#4B4B4B" />
+                    <circle cx="81" cy="105" r="3" fill="white" />
+                    <circle cx="115" cy="105" r="3" fill="white" />
+                    <path d="M 92,110 Q 100,108 108,110 L 100,125 Z" fill="#FF9600" />
+                    <path d="M 45,105 C 28,115 28,138 45,148 Z" fill="${main}" stroke="${border}" stroke-width="3" />
+                    <path d="M 155,105 C 172,115 172,138 155,148 Z" fill="${main}" stroke="${border}" stroke-width="3" />
+                    
+                    <!-- 친환경의 나뭇잎 왕관 (클래식 전설 수호자 장식) -->
+                    <g transform="translate(0, -5)">
+                        <path d="M 55,50 Q 100,32 145,50" fill="none" stroke="#2C5400" stroke-width="4" />
+                        <ellipse cx="65" cy="42" rx="10" ry="5" fill="#46A302" transform="rotate(-15 65 42)" />
+                        <ellipse cx="80" cy="36" rx="10" ry="5" fill="#58CC02" transform="rotate(-5 80 36)" />
+                        <ellipse cx="100" cy="33" rx="11" ry="5" fill="#8EE000" />
+                        <ellipse cx="120" cy="36" rx="10" ry="5" fill="#58CC02" transform="rotate(5 120 36)" />
+                        <ellipse cx="135" cy="42" rx="10" ry="5" fill="#46A302" transform="rotate(15 135 42)" />
+                        <circle cx="100" cy="27" r="4" fill="#FF4B4B" />
+                    </g>
+
+                    <path d="M 88,140 L 100,148 L 112,140" fill="none" stroke="${light}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M 80,150 L 100,160 L 120,150" fill="none" stroke="${light}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>`;
+            }
+
+            // Stage 6: 다른 탭을 볼 때 칼을 치켜든 눈물범벅의 경보형 분노 듀오
+            if (stage === 6) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full">
+                    <circle cx="100" cy="100" r="88" fill="#F87171" opacity="0.3" class="animate-ping" />
+                    <ellipse cx="100" cy="175" rx="55" ry="10" fill="#FECACA" />
+                    <ellipse cx="76" cy="168" rx="14" ry="8" fill="#DC2626" />
+                    <ellipse cx="124" cy="168" rx="14" ry="8" fill="#DC2626" />
+                    <rect x="44" y="55" width="112" height="115" rx="48" fill="${border}" stroke="${shadow}" stroke-width="5" />
+                    <path d="M 44,95 Q 40,55 75,70 Z" fill="${border}" stroke="${shadow}" stroke-width="4" />
+                    <path d="M 156,95 Q 160,55 125,70 Z" fill="${border}" stroke="${shadow}" stroke-width="4" />
+                    <path d="M 52,112 C 52,88 76,80 100,100 C 124,80 148,112 148,112 C 148,135 124,132 100,120 C 76,132 52,135 52,112 Z" fill="${main}" />
+                    <circle cx="78" cy="108" r="21" fill="white" stroke="#DC2626" stroke-width="2" />
+                    <circle cx="122" cy="108" r="21" fill="white" stroke="#DC2626" stroke-width="2" />
+                    <circle cx="82" cy="110" r="8" fill="#DC2626" />
+                    <circle cx="118" cy="110" r="8" fill="#DC2626" />
+                    <circle cx="82" cy="110" r="3" fill="black" />
+                    <circle cx="118" cy="110" r="3" fill="black" />
+                    
+                    <!-- 뚝뚝 흘러내리는 소름 돋는 눈물 줄기 -->
+                    <path d="M 72,114 Q 68,145 64,155 Q 60,145 64,120" fill="#38BDF8" />
+                    <path d="M 128,114 Q 132,145 136,155 Q 140,145 136,120" fill="#38BDF8" />
+                    
+                    <path d="M 52,86 L 82,98" stroke="${shadow}" stroke-width="6" stroke-linecap="round" />
+                    <path d="M 148,86 L 118,98" stroke="${shadow}" stroke-width="6" stroke-linecap="round" />
+                    <path d="M 92,114 L 100,126 L 108,114 Z" fill="#DC2626" />
+                    
+                    <!-- 소형 수박칼(단검) 무기 파츠 배치 -->
+                    <g transform="translate(30, 130) rotate(20)">
+                        <path d="M 15,10 C 2,25 2,45 15,55 Z" fill="${border}" stroke="${shadow}" stroke-width="3" />
+                        <polygon points="12,18 -15,5 -5,0 15,10" fill="#CBD5E1" stroke="#94A3B8" stroke-width="1.5" />
+                        <rect x="12" y="14" width="8" height="14" rx="2" fill="#78350F" transform="rotate(30 12 14)" />
+                    </g>
+                    <path d="M 155,105 C 172,90 185,115 155,128 Z" fill="${border}" stroke="${shadow}" stroke-width="3" />
+                </svg>`;
+            }
+        }
+
+        /* -----------------------------------------
+         * STREAMING_CHUNK: Setting up Audio Nodes for realistic reactions
+         * ----------------------------------------- */
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'warn') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(440, audioCtx.currentTime + 0.5);
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.5);
+                } else if (type === 'relief') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1600, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.2);
+                } else if (type === 'success') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        setTimeout(() => {
+                            const o = audioCtx.createOscillator();
+                            const g = audioCtx.createGain();
+                            o.type = 'triangle';
+                            o.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                            g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+                            o.connect(g);
+                            g.connect(audioCtx.destination);
+                            o.start();
+                            o.stop(audioCtx.currentTime + 0.45);
+                        }, idx * 120);
+                    });
+                } else if (type === 'fail') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.8);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.9);
+                }
+            } catch(e) {
+                console.log("Audio API 재생 제한 감지:", e);
+            }
+        }
+
+        /* -----------------------------------------
+         * STREAMING_CHUNK: Initializing state & strict color sequences
+         * ----------------------------------------- */
+        let pomoState = {
+            isRunning: false,
+            currentMode: 'focus', // 'focus' | 'shortBreak' | 'longBreak'
+            roundColorSequence: generateRoundColors(), // 중복 없는 무작위 색상 수열
+            currentRoundTheme: 'classic', // 시작은 무조건 오리지널 초록색
+            focusTime: 25 * 60,
+            shortBreakTime: 5 * 60,
+            longBreakTime: 15 * 60,
+            timeLeft: 25 * 60,
+            totalDurationOfSession: 25 * 60,
+            health: 100,
+            isDistracted: false,
+            completedRounds: 0, 
+            roundGoal: 4,
+            intervalId: null,
+            isDevMode: false,
+            completedStreak: 0,
+            fp: 100, // 육성용 듀오 성장 수치 포인트
+            inventory: []
+        };
+
+        const activeQuotes = {
+            healthy: [
+                "아주 기특하네요! 역시 제 안목은 틀리지 않았습니다.",
+                "휴대폰에 손을 올리지 마세요. 지켜보고 있습니다.",
+                "지금 그만두시면 오늘 밤 침대 밑이 조금 서늘해질 수도요?",
+                "아주 훌륭해요! 조금만 더 하면 보석알이 깨어납니다.",
+                "그대로 정진하세요. 당신은 멋진 기적을 해낼 수 있습니다."
+            ],
+            distracted: [
+                "다른 탭으로 도망쳐서 가치가 있는 삶을 사는 중이신가요?",
+                "지금 나간 게 실수이길 바랍니다. 다시 돌아오세요.",
+                "칼날을 뽑기 전에 얼른 하던 공부나 집중해 주시죠.",
+                "스페인어 하루 빼먹는 것보다 더 살벌한 결과가 있을 겁니다.",
+                "당장 돌아오세요. 내 인내심이 타들어가고 있습니다!"
+            ],
+            evolved: [
+                "알이 기분 좋게 들썩거리기 시작합니다!",
+                "바사삭! 틈 사이로 작은 눈동자가 보여요!",
+                "아기 새 듀오 탄생! 당신의 노력으로 첫발을 디뎠습니다.",
+                "다 자란 듀오링고! 당신은 성실의 신으로 인정받고 있습니다.",
+                "왕관을 쓴 전설적인 대수호자가 사육장에 등극했습니다!"
+            ],
+            break: [
+                "충분히 누리세요! 잠깐의 꿀맛 같은 평화로운 시간입니다.",
+                "눈을 비비고 어깨 스트레칭도 가볍게 해주세요.",
+                "정말 멋졌어요! 다음 세션을 위해 심호흡을 취해 봅시다."
+            ]
+        };
+
+        const DUO_ADJECTIVES = ["의젓한", "츤데레", "장난 가득", "모범생", "열정이 불타는", "매우 게으른", "학구파", "새벽 전문", "수다쟁이"];
+
+        // DOM 요소 바인딩
+        const timerDisplay = document.getElementById('timer-display');
+        const modeDisplay = document.getElementById('mode-display');
+        const speechBubble = document.getElementById('speech-bubble');
+        const duoContainer = document.getElementById('duo-container');
+        const progressRing = document.getElementById('timer-progress-ring');
+        const healthBar = document.getElementById('health-bar');
+        const healthText = document.getElementById('health-text');
+        const roundStatusText = document.getElementById('round-status');
+        const roundSlotsContainer = document.getElementById('round-slots');
+        const streakText = document.getElementById('streak-text');
+        const defenseBadge = document.getElementById('defense-badge');
+
+        const btnStart = document.getElementById('btn-start');
+        const btnReset = document.getElementById('btn-reset');
+        const btnSoundToggle = document.getElementById('btn-sound-toggle');
+        const devSpeedCheckbox = document.getElementById('dev-speed');
+
+        const inputFocus = document.getElementById('input-focus');
+        const inputShort = document.getElementById('input-short');
+        const inputLong = document.getElementById('input-long');
+
+        const gameoverModal = document.getElementById('gameover-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalEmoji = document.getElementById('modal-emoji');
+        const gameoverReason = document.getElementById('gameover-reason');
+        const btnRestart = document.getElementById('btn-restart');
+        
+        const rewardChoices = document.getElementById('reward-choices');
+        const btnRewardRest = document.getElementById('btn-reward-rest');
+        const btnRewardPoints = document.getElementById('btn-reward-points');
+
+        const tabTimer = document.getElementById('tab-timer');
+        const tabSanctuary = document.getElementById('tab-sanctuary');
+        const viewTimer = document.getElementById('view-timer');
+        const viewSanctuary = document.getElementById('view-sanctuary');
+        const sanctuaryCount = document.getElementById('sanctuary-count');
+        const fpBalance = document.getElementById('fp-balance');
+        const sanctuaryList = document.getElementById('sanctuary-list');
+
+        let modalActionCallback = null;
+
+        /* -----------------------------------------
+         * STREAMING_CHUNK: Handling visual renders & round-level color shifts
+         * ----------------------------------------- */
+        function renderDuoGraphic() {
+            const currentTheme = pomoState.currentRoundTheme || 'classic';
+
+            // 딴짓 감지 상태일 때
+            if (pomoState.isDistracted && pomoState.isRunning && pomoState.currentMode === 'focus') {
+                duoContainer.innerHTML = getDuoSvg(6, currentTheme);
+                return;
+            }
+
+            // 휴식 상태일 때
+            if (pomoState.currentMode === 'shortBreak' || pomoState.currentMode === 'longBreak') {
+                duoContainer.innerHTML = getDuoSvg(4, currentTheme);
+                return;
+            }
+
+            // 진척도에 따른 자동 부화 시각화
+            const progress = ((pomoState.totalDurationOfSession - pomoState.timeLeft) / pomoState.totalDurationOfSession) * 100;
+
+            if (progress >= 85) {
+                duoContainer.innerHTML = getDuoSvg(5, currentTheme);
+            } else if (progress >= 60) {
+                duoContainer.innerHTML = getDuoSvg(4, currentTheme);
+            } else if (progress >= 40) {
+                duoContainer.innerHTML = getDuoSvg(3, currentTheme);
+            } else if (progress >= 20) {
+                duoContainer.innerHTML = getDuoSvg(2, currentTheme);
+            } else {
+                duoContainer.innerHTML = getDuoSvg(1, currentTheme);
+            }
+        }
+
+        function speakRandom(category) {
+            const list = activeQuotes[category];
+            const randomIndex = Math.floor(Math.random() * list.length);
+            speechBubble.innerHTML = `"${list[randomIndex]}"`;
+        }
+
+        function renderRoundSlots() {
+            roundSlotsContainer.innerHTML = '';
+            for (let i = 0; i < pomoState.roundGoal; i++) {
+                const slot = document.createElement('div');
+                slot.className = "flex flex-col items-center justify-center p-2 rounded-xl border-2 bg-white transition-all";
+                
+                if (i < pomoState.completedRounds) {
+                    slot.classList.add('border-green-400', 'bg-green-50');
+                    slot.innerHTML = `
+                        <div class="w-8 h-8 text-xl">🦉</div>
+                        <span class="text-[9px] font-black text-green-600 mt-1">부화 성공</span>
+                    `;
+                } else {
+                    slot.classList.add('border-gray-200');
+                    slot.innerHTML = `
+                        <div class="w-8 h-8 opacity-40 text-xl">🥚</div>
+                        <span class="text-[9px] font-bold text-gray-400 mt-1">${i + 1}단계 알</span>
+                    `;
+                }
+                roundSlotsContainer.appendChild(slot);
+            }
+            roundStatusText.textContent = `Round ${Math.min(pomoState.completedRounds + 1, pomoState.roundGoal)} / ${pomoState.roundGoal}`;
+        }
+
+        /* -----------------------------------------
+         * STREAMING_CHUNK: Managing pet sanctuary rendering
+         * ----------------------------------------- */
+        function renderSanctuary() {
+            sanctuaryCount.textContent = pomoState.inventory.length;
+            fpBalance.textContent = pomoState.fp;
+            sanctuaryList.innerHTML = '';
+
+            if (pomoState.inventory.length === 0) {
+                sanctuaryList.innerHTML = `
+                    <div class="text-center py-8 text-gray-400 font-bold text-sm">
+                        🐣 아직 부화된 듀오링고가 없습니다.<br>집중 사이클을 완수해 예쁜 첫 알을 얻어보세요!
+                    </div>
+                `;
+                return;
+            }
+
+            pomoState.inventory.forEach((duo, index) => {
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between p-3 bg-gray-50 rounded-2xl border-2 border-gray-200 space-x-3";
+                
+                const progressWidth = (duo.level / duo.maxLevel) * 100;
+                const themeInfo = DUO_THEMES[duo.themeKey] || DUO_THEMES.classic;
+                const duoVisualSvg = getDuoSvg(duo.level, duo.themeKey);
+                
+                item.innerHTML = `
+                    <div class="w-14 h-14 bg-white rounded-xl border border-gray-200 p-1 flex items-center justify-center">
+                        <div class="w-12 h-12">${duoVisualSvg}</div>
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-xs font-black text-gray-800 flex items-center space-x-1">
+                            <span>${duo.name}</span>
+                            <span class="text-[9px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 font-bold">${themeInfo.name}</span>
+                        </div>
+                        <div class="text-[10px] text-gray-400 font-bold mt-0.5">성장 단계: ${duo.level === 5 ? '👑 최고 레벨 (왕관)' : 'Lv.' + duo.level + '/' + duo.maxLevel}</div>
+                        <div class="w-full bg-gray-200 h-1.5 rounded-full mt-1.5 overflow-hidden">
+                            <div class="h-full transition-all duration-300" style="background-color: ${themeInfo.main}; width: ${progressWidth}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn-feed px-2.5 py-1.5 text-[10px] font-black text-white bg-green-500 hover:bg-green-600 rounded-lg active:translate-y-0.5 transition-all" data-idx="${index}">
+                            🍖 피딩 (30 FP)
+                        </button>
+                    </div>
+                `;
+                sanctuaryList.appendChild(item);
+            });
+
+            // 듀오 피딩 이벤트 동적 연계
+            document.querySelectorAll('.btn-feed').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(e.target.dataset.idx, 10);
+                    feedDuo(idx);
+                });
+            });
+        }
+
+        // 포인트 차감형 먹이 주기 
+        function feedDuo(idx) {
+            if (pomoState.fp < 30) {
+                openAlertModal("FP 부족!", "성장 영양 포인트(FP)가 부족합니다. 집중 세션을 완수해 추가로 보상받으세요!", "🍖");
+                return;
+            }
+            const duo = pomoState.inventory[idx];
+            if (duo.level >= duo.maxLevel) {
+                openAlertModal("완전 진화 상태!", "이 듀오는 이미 나뭇잎 왕관을 쓴 완숙 최고 수호자로 진화했습니다!", "👑");
+                return;
+            }
+            
+            pomoState.fp -= 30;
+            duo.level += 1;
+            
+            const themeInfo = DUO_THEMES[duo.themeKey] || DUO_THEMES.classic;
+
+            // 단계별 성장 직위 부여
+            if (duo.level === 5) {
+                duo.name = `👑 숲의 대수호자 ${themeInfo.name} 듀오`;
+            } else if (duo.level === 4) {
+                duo.name = `⚡ 고집쟁이 ${themeInfo.name} 듀오`;
+            } else if (duo.level === 3) {
+                duo.name = `🐣 유치원생 ${themeInfo.name} 듀오`;
+            } else if (duo.level === 2) {
+                duo.name = `🥚 알을 깨고 나온 ${themeInfo.name} 듀오`;
+            }
+
+            playSound('success');
+            saveUserData();
+            renderSanctuary();
+        }
+
+        /* -----------------------------------------
+         * STREAMING_CHUNK: Upgrading UI timers and circular gauges
+         * ----------------------------------------- */
+        function updateUI() {
+            const m = Math.floor(pomoState.timeLeft / 60).toString().padStart(2, '0');
+            const s = (pomoState.timeLeft % 60).toString().padStart(2, '0');
+            timerDisplay.textContent = `${m}:${s}`;
+
+            const themeKey = pomoState.currentRoundTheme || 'classic';
+            const themeInfo = DUO_THEMES[themeKey] || DUO_THEMES.classic;
+
+            if (pomoState.currentMode === 'focus') {
+                modeDisplay.textContent = `FOCUS TIME (${themeInfo.name} 알 품기)`;
+                modeDisplay.style.color = themeInfo.main;
+                progressRing.setAttribute('stroke', themeInfo.main);
+            } else if (pomoState.currentMode === 'shortBreak') {
+                modeDisplay.textContent = "SHORT BREAK (달콤한 평화)";
+                modeDisplay.style.color = '#1899eb';
+                progressRing.setAttribute('stroke', '#1899eb');
+            } else {
+                modeDisplay.textContent = "LONG BREAK (대꿀잠 시간)";
+                modeDisplay.style.color = '#6366f1';
+                progressRing.setAttribute('stroke', '#6366f1');
+            }
+
+            const circumference = 2 * Math.PI * 116; 
+            const progressRatio = pomoState.timeLeft / pomoState.totalDurationOfSession;
+            const strokeOffset = circumference - (progressRatio * circumference);
+            progressRing.style.strokeDasharray = `${circumference}`;
+            progressRing.style.strokeDashoffset = `${strokeOffset}`;
+
+            healthBar.style.width = `${pomoState.health}%`;
+            healthText.textContent = `${Math.round(pomoState.health)}%`;
+            
+            if (pomoState.health > 50) {
+                healthBar.className = "bg-green-500 h-full transition-all duration-300";
+            } else if (pomoState.health > 25) {
+                healthBar.className = "bg-amber-500 h-full transition-all duration-300";
+            } else {
+                healthBar.className = "bg-red-500 h-full transition-all duration-300";
+            }
+
+            streakText.textContent = `${pomoState.completedStreak}회 성공`;
+            renderDuoGraphic();
+        }
+
+        /* -----------------------------------------
+         * STREAMING_CHUNK: Managing study intervals & automatic phase progression
+         * ----------------------------------------- */
+        function syncTimeSettings() {
+            pomoState.focusTime = parseInt(inputFocus.value, 10) * 60 || 25 * 60;
+            pomoState.shortBreakTime = parseInt(inputShort.value, 10) * 60 || 5 * 60;
+            pomoState.longBreakTime = parseInt(inputLong.value, 10) * 60 || 15 * 60;
+
+            if (!pomoState.isRunning) {
+                resetSessionTimer();
+            }
+        }
+
+        function resetSessionTimer() {
+            if (pomoState.currentMode === 'focus') {
+                pomoState.timeLeft = pomoState.focusTime;
+            } else if (pomoState.currentMode === 'shortBreak') {
+                pomoState.timeLeft = pomoState.shortBreakTime;
+            } else {
+                pomoState.timeLeft = pomoState.longBreakTime;
+            }
+            pomoState.totalDurationOfSession = pomoState.timeLeft;
+            updateUI();
+        }
+
+        function toggleTimer() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            if (pomoState.isRunning) {
+                pomoState.isRunning = false;
+                btnStart.textContent = "공부 시작!";
+                btnStart.className = "btn-duo-green text-white py-3.5 px-4 rounded-2xl font-black text-lg focus:outline-none shadow-sm";
+                clearInterval(pomoState.intervalId);
+                pomoState.intervalId = null;
+            } else {
+                pomoState.isRunning = true;
+                if (pomoState.currentMode === 'focus') {
+                    btnStart.textContent = "일시 정지";
+                    btnStart.className = "btn-duo-danger text-white py-3.5 px-4 rounded-2xl font-black text-lg focus:outline-none shadow-sm";
+                    speakRandom('healthy');
+                } else {
+                    btnStart.textContent = "휴식 중지";
+                    btnStart.className = "btn-duo-danger text-white py-3.5 px-4 rounded-2xl font-black text-lg focus:outline-none shadow-sm";
+                    speakRandom('break');
+                }
+                pomoState.intervalId = setInterval(tickTimer, 1000);
+            }
+            updateUI();
+        }
+
+        // 실시간 화면 이탈(Page Visibility API) 및 패널티 경보음 매핑
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (pomoState.isRunning && pomoState.currentMode === 'focus') {
+                    pomoState.isDistracted = true;
+                    document.body.classList.add('emergency-active');
+                    
+                    defenseBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span><span>EMERGENCY</span>`;
+                    defenseBadge.className = "flex items-center space-x-1 px-2 py-1 bg-red-100 text-red-700 text-[10px] font-black rounded-full";
+                    
+                    renderDuoGraphic();
+                    speakRandom('distracted');
+                    playSound('warn');
+                }
+            } else {
+                if (pomoState.isDistracted) {
+                    pomoState.isDistracted = false;
+                    document.body.classList.remove('emergency-active');
+
+                    defenseBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 animate-ping"></span><span>SAFE</span>`;
+                    defenseBadge.className = "flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-700 text-[10px] font-black rounded-full";
+
+                    renderDuoGraphic();
+                    speechBubble.innerHTML = `"휴... 딴짓 멈추고 돌아와줘서 다행이에요. 계속 진행합시다!"`;
+                    playSound('relief');
+                }
+            }
+        });
+
+        // 1초 단위 타이머 스케줄링 인터벌 제어
+        function tickTimer() {
+            const multiplier = pomoState.isDevMode ? 60 : 1;
+
+            for (let k = 0; k < multiplier; k++) {
+                if (pomoState.timeLeft <= 0) {
+                    clearInterval(pomoState.intervalId);
+                    pomoState.intervalId = null;
+                    pomoState.isRunning = false;
+                    handleSessionComplete();
+                    return;
+                }
+
+                // 딴짓으로 이탈해 있을 경우 체력 대량 감쇄 패널티 부여
+                if (pomoState.isDistracted && pomoState.currentMode === 'focus') {
+                    pomoState.health -= 1.5; 
+                    if (pomoState.health <= 0) {
+                        pomoState.health = 0;
+                        clearInterval(pomoState.intervalId);
+                        pomoState.intervalId = null;
+                        pomoState.isRunning = false;
+                        triggerFailure();
+                        return;
+                    }
+                    if (Math.random() < 0.1) {
+                        playSound('warn');
+                    }
+                } else {
+                    if (pomoState.health < 100) {
+                        pomoState.health = Math.min(100, pomoState.health + 0.1);
+                    }
+                }
+
+                pomoState.timeLeft--;
+            }
+
+            updateUI();
+
+            if (pomoState.timeLeft % 20 === 0 && pomoState.isRunning) {
+                if (pomoState.isDistracted) {
+                    speakRandom('distracted');
+                } else if (pomoState.currentMode === 'focus') {
+                    speakRandom('healthy');
+                }
+            }
+        }
+
+        /* -----------------------------------------
+         * STREAMING_CHUNK: Delivering dynamic stage-wise rewards and cycling colors
+         * ----------------------------------------- */
+        function handleSessionComplete() {
+            playSound('success');
+
+            if (pomoState.currentMode === 'focus') {
+                pomoState.completedRounds++;
+                pomoState.completedStreak++;
+
+                triggerRewardModal();
+            } else {
+                pomoState.currentMode = 'focus';
+                
+                // 새로운 무작위 테마 색상 갱신
+                pomoState.currentRoundTheme = pomoState.roundColorSequence[pomoState.completedRounds % 5];
+                const activeThemeInfo = DUO_THEMES[pomoState.currentRoundTheme];
+
+                openAlertModal(
+                    "⏰ 휴식 끝! 다시 집중합시다!", 
+                    `새로운 ${activeThemeInfo.name} 알이 배달되었습니다. 딴짓하지 말고 멋지게 부화시켜 보세요!`, 
+                    "🦉", 
+                    () => {
+                        btnStart.textContent = "공부 시작!";
+                        btnStart.className = "btn-duo-green text-white py-3.5 px-4 rounded-2xl font-black text-lg focus:outline-none shadow-sm";
+                        renderRoundSlots();
+                        resetSessionTimer();
+                        saveUserData();
+                    }
+                );
+            }
+        }
+
+        // 보상 지급 연계 모달 렌더링
+        function triggerRewardModal() {
+            modalEmoji.textContent = "🎁";
+            modalTitle.textContent = `${pomoState.completedRounds}단계 성공!`;
+            modalTitle.className = "text-2xl font-black text-[#58cc02]";
+            gameoverReason.textContent = "훌륭합니다! 듀오가 당신의 온전한 노력을 격려하며 특별 선물을 보냈습니다. 아래 유용한 보상 중 하나를 획득하세요.";
+            
+            rewardChoices.classList.remove('hidden');
+            btnRestart.classList.add('hidden');
+
+            gameoverModal.classList.remove('hidden');
+        }
+
+        // 보상 1: 10분 추가 휴식권
+        btnRewardRest.addEventListener('click', () => {
+            pomoState.shortBreakTime += 10 * 60;
+            claimRewardSuccess("☕ 10분 휴식 추가권 획득!", "이번 짧은 휴식 시간이 총 15분으로 증가했습니다.");
+        });
+
+        // 보상 2: 100 FP 포인트 획득
+        btnRewardPoints.addEventListener('click', () => {
+            pomoState.fp += 100;
+            claimRewardSuccess("🧪 100 FP 획득 성공!", "사육장에 보관 중인 듀오 알을 즉시 길러낼 수 있습니다.");
+        });
+
+        function claimRewardSuccess(title, sub) {
+            rewardChoices.classList.add('hidden');
+            btnRestart.classList.remove('hidden');
+            gameoverModal.classList.add('hidden');
+
+            // 획득한 고유 색상 테마의 알 생성 및 도감 보존
+            const randomAdj = DUO_ADJECTIVES[Math.floor(Math.random() * DUO_ADJECTIVES.length)];
+            const activeThemeKey = pomoState.currentRoundTheme || 'classic';
+            const targetColorName = DUO_THEMES[activeThemeKey].name;
+
+            const newDuoItem = {
+                id: 'duo-' + Date.now(),
+                name: `${randomAdj} ${targetColorName} 알`,
+                level: 1,
+                maxLevel: 5,
+                themeKey: activeThemeKey
+            };
+            
+            pomoState.inventory.push(newDuoItem);
+
+            const justFinishedRound = pomoState.completedRounds;
+
+            if (pomoState.completedRounds >= pomoState.roundGoal) {
+                pomoState.currentMode = 'longBreak';
+                pomoState.completedRounds = 0; 
+
+                openAlertModal(
+                    `🎉 ${justFinishedRound}단계 성공! 4라운드 올클리어`, 
+                    `오늘 집중 4단계를 무사히 전부 완료해냈습니다! 이제 ${pomoState.longBreakTime / 60}분간 행복한 긴 휴식에 들어갑니다.`, 
+                    "👑",
+                    () => {
+                        btnStart.textContent = "휴식 시작하기";
+                        btnStart.className = "btn-duo-blue text-white py-3.5 px-4 rounded-2xl font-black text-lg focus:outline-none shadow-sm";
+                        renderRoundSlots();
+                        resetSessionTimer();
+                        saveUserData();
+                        renderSanctuary();
+                    }
+                );
+            } else {
+                pomoState.currentMode = 'shortBreak';
+
+                openAlertModal(
+                    `🎉 ${justFinishedRound}단계 성공! ${title}`, 
+                    `${sub} 이제 평화로운 휴식이 보장됩니다.`, 
+                    "🐣",
+                    () => {
+                        btnStart.textContent = "휴식 시작하기";
+                        btnStart.className = "btn-duo-blue text-white py-3.5 px-4 rounded-2xl font-black text-lg focus:outline-none shadow-sm";
+                        renderRoundSlots();
+                        resetSessionTimer();
+                        saveUserData();
+                        renderSanctuary();
+                    }
+                );
+            }
+        }
+
+        // 딴짓 과다 체력 0으로 인한 아웃 실패 모달 가동
+        function triggerFailure() {
+            playSound('fail');
+            pomoState.completedStreak = 0; 
+            saveUserData();
+
+            modalEmoji.textContent = "🔪";
+            modalTitle.textContent = "인내심의 한계 폭발!";
+            modalTitle.className = "text-2xl font-black text-red-600";
+            gameoverReason.textContent = `"집중 중에 딴짓을 하시다니... 제 인내심도 한계에 도달했습니다. 오늘 밤 당신의 방에 조용히 칼 한 자루가 배달될지도 모르겠네요."`;
+            
+            rewardChoices.classList.add('hidden');
+            btnRestart.classList.remove('hidden');
+            btnRestart.textContent = "용서를 빌고 처음부터 다시 시작";
+            btnRestart.className = "w-full btn-duo-danger text-white py-3.5 rounded-2xl font-black shadow-sm";
+            
+            modalActionCallback = () => {
+                resetAll();
+            };
+            gameoverModal.classList.remove('hidden');
+        }
+
+        function openAlertModal(title, text, emoji, callback) {
+            modalEmoji.textContent = emoji;
+            modalTitle.textContent = title;
+            modalTitle.className = "text-2xl font-black text-[#58cc02]";
+            gameoverReason.textContent = text;
+            
+            rewardChoices.classList.add('hidden');
+            btnRestart.classList.remove('hidden');
+            btnRestart.textContent = "확인";
+            btnRestart.className = "w-full btn-duo-green text-white py-3.5 rounded-2xl font-black shadow-sm";
+            
+            modalActionCallback = callback || null;
+            gameoverModal.classList.remove('hidden');
+        }
+
+        function resetAll() {
+            pomoState.isRunning = false;
+            pomoState.currentMode = 'focus';
+            
+            // 리셋 시 새로운 무중복 컬러 세팅으로 재빌드
+            pomoState.roundColorSequence = generateRoundColors();
+            pomoState.currentRoundTheme = pomoState.roundColorSequence[0]; 
+
+            pomoState.focusTime = parseInt(inputFocus.value, 10) * 60 || 25 * 60;
+            pomoState.shortBreakTime = parseInt(inputShort.value, 10) * 60 || 5 * 60;
+            pomoState.longBreakTime = parseInt(inputLong.value, 10) * 60 || 15 * 60;
+
+            pomoState.timeLeft = pomoState.focusTime;
+            pomoState.totalDurationOfSession = pomoState.timeLeft;
+            pomoState.health = 100;
+            pomoState.isDistracted = false;
+            pomoState.completedRounds = 0;
+
+            document.body.classList.remove('emergency-active');
+            clearInterval(pomoState.intervalId);
+            pomoState.intervalId = null;
+
+            btnStart.textContent = "공부 시작!";
+            btnStart.className = "btn-duo-green text-white py-3.5 px-4 rounded-2xl font-black text-lg focus:outline-none shadow-sm";
+            
+            defenseBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 animate-ping"></span><span>SAFE</span>`;
+            defenseBadge.className = "flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-700 text-[10px] font-black rounded-full";
+
+            renderRoundSlots();
+            updateUI();
+            speechBubble.innerHTML = `"정신을 딴딴히 붙잡고 다시 집중을 시작하세요. 딴짓하는 즉시 다시 찾아옵니다."`;
+        }
+
+        /* -----------------------------------------
+         * STREAMING_CHUNK: Managing Firestore cloud saving
+         * ----------------------------------------- */
+        async function initFirebase() {
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+            if (!firebaseConfig) {
+                loadLocalBackup();
+                return;
+            }
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                await signInAnonymously(auth);
+                userId = auth.currentUser?.uid;
+                
+                if (userId) {
+                    await fetchUserData();
+                }
+            } catch(e) {
+                console.log("Firebase 연결 제한으로 인한 대체 로드:", e);
+                loadLocalBackup();
+            }
+        }
+
+        async function fetchUserData() {
+            if (!db || !userId) return;
+            try {
+                const userDocRef = doc(db, 'artifacts', appId, 'users', userId, 'profile', 'userdata');
+                const userSnap = await getDoc(userDocRef);
+                if (userSnap.exists()) {
+                    const data = userSnap.data();
+                    pomoState.completedStreak = data.completedStreak || 0;
+                    pomoState.fp = data.fp ?? 100;
+                    pomoState.inventory = data.inventory || [];
+                }
+                renderSanctuary();
+                updateUI();
+            } catch(err) {
+                console.log("DB 데이터 로드 에러:", err);
+            }
+        }
+
+        async function saveUserData() {
+            if (!db || !userId) {
+                saveLocalBackup();
+                return;
+            }
+            try {
+                const userDocRef = doc(db, 'artifacts', appId, 'users', userId, 'profile', 'userdata');
+                await setDoc(userDocRef, {
+                    completedStreak: pomoState.completedStreak,
+                    fp: pomoState.fp,
+                    inventory: pomoState.inventory
+                }, { merge: true });
+            } catch(e) {
+                saveLocalBackup();
+            }
+        }
+
+        function saveLocalBackup() {
+            const dump = {
+                completedStreak: pomoState.completedStreak,
+                fp: pomoState.fp,
+                inventory: pomoState.inventory
+            };
+            try {
+                localStorage.setItem('duo_pomo_local_colorful_v2', JSON.stringify(dump));
+            } catch(e){}
+        }
+
+        function loadLocalBackup() {
+            try {
+                const raw = localStorage.getItem('duo_pomo_local_colorful_v2');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    pomoState.completedStreak = parsed.completedStreak || 0;
+                    pomoState.fp = parsed.fp ?? 100;
+                    pomoState.inventory = parsed.inventory || [];
+                }
+            } catch(e){}
+            renderSanctuary();
+            updateUI();
+        }
+
+        /* -----------------------------------------
+         * STREAMING_CHUNK: Binding Event listeners and launching application
+         * ----------------------------------------- */
+        tabTimer.addEventListener('click', () => {
+            viewTimer.classList.remove('hidden');
+            viewSanctuary.classList.add('hidden');
+            tabTimer.className = "py-2 rounded-xl font-bold text-sm bg-white border-2 border-[#58cc02] text-[#58cc02] shadow-sm";
+            tabSanctuary.className = "py-2 rounded-xl font-bold text-sm bg-white border-2 border-gray-200 text-gray-400";
+        });
+
+        tabSanctuary.addEventListener('click', () => {
+            viewTimer.classList.add('hidden');
+            viewSanctuary.classList.remove('hidden');
+            tabSanctuary.className = "py-2 rounded-xl font-bold text-sm bg-white border-2 border-[#58cc02] text-[#58cc02] shadow-sm";
+            tabTimer.className = "py-2 rounded-xl font-bold text-sm bg-white border-2 border-gray-200 text-gray-400";
+            renderSanctuary();
+        });
+
+        btnStart.addEventListener('click', toggleTimer);
+        btnReset.addEventListener('click', resetAll);
+
+        inputFocus.addEventListener('change', syncTimeSettings);
+        inputShort.addEventListener('change', syncTimeSettings);
+        inputLong.addEventListener('change', syncTimeSettings);
+
+        btnSoundToggle.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            btnSoundToggle.textContent = soundEnabled ? "ON 🔊" : "OFF 🔇";
+            btnSoundToggle.className = soundEnabled 
+                ? "px-2.5 py-1 text-[10px] font-bold rounded-full bg-green-100 text-green-700 border border-green-300"
+                : "px-2.5 py-1 text-[10px] font-bold rounded-full bg-gray-100 text-gray-400 border border-gray-300";
+        });
+
+        devSpeedCheckbox.addEventListener('change', (e) => {
+            pomoState.isDevMode = e.target.checked;
+        });
+
+        btnRestart.addEventListener('click', () => {
+            gameoverModal.classList.add('hidden');
+            if (typeof modalActionCallback === 'function') {
+                modalActionCallback();
+                modalActionCallback = null;
+            } else {
+                resetAll();
+            }
+        });
+
+        // 브라우저 윈도우 최초 기동 시 데이터 마운팅 및 초기화
+        window.onload = function() {
+            pomoState.roundColorSequence = generateRoundColors();
+            pomoState.currentRoundTheme = pomoState.roundColorSequence[0];
+
+            initFirebase();
+            renderRoundSlots();
+            resetSessionTimer();
+            updateUI();
+        };
+    </script>
+</body>
+</html>
